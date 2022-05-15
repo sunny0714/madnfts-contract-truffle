@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.4;
+
+contract IsPrivateCollection {
+    /// @dev true if collection is private, false if public
+    bool isPrivate;
+
+    uint256[49] private __gap;
+}
