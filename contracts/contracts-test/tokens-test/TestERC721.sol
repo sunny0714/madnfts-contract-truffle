@@ -10,9 +10,13 @@ contract TestERC721 is ERC721, Ownable {
 
     }
 
-    function mint(address to, uint tokenId, string memory uri) external {
+    // function mint(address to, uint tokenId, string memory uri) external {
+    //     _mint(to, tokenId);
+    //     _setTokenURI(tokenId, uri);
+    // }
+
+    function mint(address to, uint tokenId) external {
         _mint(to, tokenId);
-        _setTokenURI(tokenId, uri);
     }
 
     function burn(uint tokenId) external {

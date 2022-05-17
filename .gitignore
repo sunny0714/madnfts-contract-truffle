@@ -1,5 +1,6 @@
 node_modules
 build
+.openzeppelin
 .env
 coverage
 coverage.json

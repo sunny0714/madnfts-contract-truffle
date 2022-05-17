@@ -1,0 +1,15 @@
+// SPDX-License-Identifier: UNLICENSED
+
+pragma solidity ^0.8.4;
+
+import "../../../contracts/Mint721Validator.sol";
+
+contract Mint721ValidatorTest is Mint721Validator {
+    function __Mint721ValidatorTest_init() external initializer {
+        __Mint721Validator_init_unchained();
+    }
+
+    function validateTest(LibERC721LazyMint.Mint721Data memory data, uint index) external view {
+        validate(data.creators[index].account, LibERC721LazyMint.hash(data), data.signatures[index]);
+    }
+}
