@@ -28,7 +28,7 @@ module.exports = {
      port: 7545,            // Standard Ethereum port (default: none)
      network_id: "*",       // Any network (default: none)
     },
-    rinkeby_infura: {
+    rinkeby: {
       provider: function () {
         return new HDWalletProvider(process.env.MNEMONIC, "wss://rinkeby.infura.io/ws/v3/239a6062fd364546bdceba84ab5e75fb", MetaMaskAccountIndex)
       },

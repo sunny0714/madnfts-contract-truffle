@@ -24,10 +24,11 @@ module.exports = async function (deployer) {
   const erc1155 = await getProxyImplementation(ERC1155MadNft, ProxyAdmin)
 
   //upgrading 1155 beacon
+  await deployer.deploy(ERC1155MadNftBeacon, erc1155, { gas: 1000000 });
   const beacon1155 = await ERC1155MadNftBeacon.deployed();
-  console.log(`old impl 1155 = ${await beacon1155.implementation()}`)
-  await beacon1155.upgradeTo(erc1155)
-  console.log(`new impl 1155 = ${await beacon1155.implementation()}`)
+  // console.log(`old impl 1155 = ${await beacon1155.implementation()}`)
+  // await beacon1155.upgradeTo(erc1155)
+  // console.log(`new impl 1155 = ${await beacon1155.implementation()}`)
 
   //deploying new factory
   const factory1155 = await deployer.deploy(ERC1155MadNftFactory, beacon1155.address, transferProxy, erc1155LazyMintTransferProxy, { gas: 2500000 });
