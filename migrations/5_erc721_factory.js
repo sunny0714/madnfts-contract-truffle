@@ -16,9 +16,6 @@ const TransferProxy = artifacts.require('TransferProxy');
 const ERC721LazyMintTransferProxy = artifacts.require('ERC721LazyMintTransferProxy');
 
 module.exports = async function (deployer) {
-  // disable this when deploying in all to avoid deploying twice
-  await deployer.deploy(TransferProxy, { gas: 1500000 });
-  await deployer.deploy(ERC721LazyMintTransferProxy, { gas: 1500000 });
   
   const transferProxy = (await TransferProxy.deployed()).address;
   const erc721LazyMintTransferProxy = (await ERC721LazyMintTransferProxy.deployed()).address;
