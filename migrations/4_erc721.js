@@ -1,9 +1,11 @@
 const { deployProxy } = require('@openzeppelin/truffle-upgrades');
 
+const TransferProxy = artifacts.require('TransferProxy');
+const ERC721LazyMintTransferProxy = artifacts.require('ERC721LazyMintTransferProxy');
 const ERC721MadNft = artifacts.require('ERC721MadNft');
 
 module.exports = async function (deployer) {
-  const transferProxy = "0x7171EB003B9Bc31EA67Ad6d892A78b85593ed8Ae";
-  const erc721LazyMintTransferProxy = "0xf561B4734FDc5bfbD15c257E35d1EE40D8034e92";
+  const transferProxy = (await TransferProxy.deployed()).address;
+  const erc721LazyMintTransferProxy = (await ERC721LazyMintTransferProxy.deployed()).address;
   await deployProxy(ERC721MadNft, ["MadNft", "MAD", "ipfs:/", "", transferProxy, erc721LazyMintTransferProxy], { deployer, initializer: '__ERC721MadNft_init' });
 };
