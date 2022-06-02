@@ -1,4 +1,5 @@
-const Testing = artifacts.require("ERC1155MadNft.sol");
+const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
+const ERC1155MadNft = artifacts.require("ERC1155MadNft.sol");
 const UpgradeableBeacon = artifacts.require("UpgradeableBeacon.sol");
 const ERC1155MadNftUserFactory = artifacts.require("ERC1155MadNftFactory.sol");
 const truffleAssert = require('truffle-assertions');
@@ -20,65 +21,13 @@ contract("ERC1155MadNftUser", accounts => {
   const whiteListProxy = accounts[5];
 
   beforeEach(async () => {
-    token = await Testing.new();
-    // await token.__ERC1155MadNftUser_init(name, "TST", "ipfs:/", "ipfs:/", [whiteListProxy], accounts[6], accounts[7], {from: tokenOwner});
+    token = await deployProxy(ERC1155MadNft, [name, "MAD", "https://ipfs.madnfts.com", "https://ipfs.madnfts.com", [whiteListProxy], accounts[6], accounts[7]], { initializer: "__ERC1155MadNftUser_init" });
+    await token.transferOwnership(tokenOwner);
   });
 
   it("approve for all", async () => {
     assert.equal(await token.isApprovedForAll(accounts[1], accounts[6]), true);
     assert.equal(await token.isApprovedForAll(accounts[1], accounts[7]), true);
-  });
-
-  it("mint and transfer by minter, token create by Factory", async () => {
-    beacon = await UpgradeableBeacon.new(token.address);
-    factory = await ERC1155MadNftUserFactory.new(beacon.address, ZERO, ZERO);
-    const salt = 3;
-
-    const addressBeforeDeploy = await factory.getAddress(name, "TST", "ipfs:/", "ipfs:/", [], salt)
-    const addfressWithDifferentSalt = await factory.getAddress(name, "TST", "ipfs:/", "ipfs:/", [], salt + 1)
-    const addressWithDifferentData = await factory.getAddress(name, "TSA", "ipfs:/", "ipfs:/", [], salt)
-
-    assert.notEqual(addressBeforeDeploy, addfressWithDifferentSalt, "different salt = different addresses")
-    assert.notEqual(addressBeforeDeploy, addressWithDifferentData, "different data = different addresses")
-
-    const resultCreateToken = await factory.createToken(name, "TST", "ipfs:/", "ipfs:/", [], salt, {from: tokenOwner});
-    truffleAssert.eventEmitted(resultCreateToken, 'Create1155MadNftUserProxy', (ev) => {
-     	proxy = ev.proxy;
-      return true;
-    });
-    assert.equal(addressBeforeDeploy, proxy, "correct address got before deploy")
-    
-    let addrToken2;
-    const resultCreateToken2 = await factory.createToken(name, "TST", "ipfs:/", "ipfs:/", [], salt + 1, {from: tokenOwner});
-    truffleAssert.eventEmitted(resultCreateToken2, 'Create1155MadNftUserProxy', (ev) => {
-        addrToken2 = ev.proxy;
-      return true;
-    });
-    assert.equal(addrToken2, addfressWithDifferentSalt, "correct address got before deploy")
-
-    let addrToken3;
-    const resultCreateToken3 = await factory.createToken(name, "TSA", "ipfs:/", "ipfs:/", [], salt, {from: tokenOwner});
-    truffleAssert.eventEmitted(resultCreateToken3, 'Create1155MadNftUserProxy', (ev) => {
-      addrToken3 = ev.proxy;
-    return true;
-    });
-    assert.equal(addrToken3, addressWithDifferentData, "correct address got before deploy")
-
-    let minter = tokenOwner;
-    let transferTo = accounts[2];
-
-    const tokenId = minter + "b00000000000000000000001";
-    const tokenURI = "/uri";
-    let supply = 5;
-    let mint = 2;
-
-    tokenByProxy = await Testing.at(proxy);
-
-    await tokenByProxy.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [zeroWord]], transferTo, mint, {from: minter});
-    
-		assert.equal(await tokenByProxy.uri(tokenId), "ipfs:/" + tokenURI);
-    assert.equal(await tokenByProxy.balanceOf(transferTo, tokenId), mint);
-    assert.equal(await tokenByProxy.balanceOf(minter, tokenId), 0);
   });
 
   it("check for ERC165 interface", async () => {
@@ -87,10 +36,6 @@ contract("ERC1155MadNftUser", accounts => {
 
   it("check for mintAndTransfer interface", async () => {
   	assert.equal(await token.supportsInterface("0x6db15a0f"), true);
-  });
-
-  it("check for Roaylties interface", async () => {
-  	assert.equal(await token.supportsInterface("0xcad96cca"), true);
   });
 
   it("check for ERC1155 interfaces", async () => {
@@ -115,24 +60,6 @@ contract("ERC1155MadNftUser", accounts => {
       return true;
     });
     assert.equal(newBaseUri, newBaseUriFromEvent);
-  });
-
-
-  it("mint and transfer by proxy. minter is tokenOwner", async () => {
-    let minter = tokenOwner;
-    let transferTo = accounts[2];
-
-    const tokenId = minter + "b00000000000000000000001";
-    const tokenURI = "/uri";
-    let supply = 5;
-    let mint = 2;
-
-    const signature = await getSignature(tokenId, tokenURI, supply, creators([minter]), [], minter);
-
-    await token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [signature]], transferTo, mint, {from: whiteListProxy});
-
-		assert.equal(await token.uri(tokenId), "ipfs:/" + tokenURI);
-    assert.equal(await token.balanceOf(transferTo, tokenId), mint);
   });
 
   it("mint and transfer by minter. minter is tokenOwner", async () => {
@@ -163,24 +90,6 @@ contract("ERC1155MadNftUser", accounts => {
     );
   });
 
-  it("mint and transfer by minter several creators", async () => {
-    let minter = tokenOwner;
-    const creator2 = accounts[3];
-    let transferTo = accounts[2];
-
-    const tokenId = minter + "b00000000000000000000001";
-    const tokenURI = "//uri";
-    let supply = 5;
-    let mint = 2;
-
-    const signature2 = await getSignature(tokenId, tokenURI, supply, creators([minter, creator2]), [], creator2);
-
-    await token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter, creator2]), [], [zeroWord, signature2]], transferTo, mint, {from: minter});
-
-    assert.equal(await token.balanceOf(transferTo, tokenId), mint);
-    await checkCreators(tokenId, [minter, creator2]);
-  });
-
   it("mint and transfer to self by minter", async () => {
     let minter = tokenOwner;
     let transferTo = minter;
@@ -209,36 +118,11 @@ contract("ERC1155MadNftUser", accounts => {
       token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [zeroWord]], transferTo, mint, {from: minter})
     );
 
-    await token.addWhitelist(minter, {from: tokenOwner});
+    await token.addWhitelist([minter], {from: tokenOwner});
     assert.equal(await token.isWhitelist(minter), true);
     assert.equal(await token.isWhitelist(transferTo), false);
 
     await token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [zeroWord]], transferTo, mint, {from: minter});
-    assert.equal(await token.balanceOf(transferTo, tokenId), mint);
-    assert.equal(await token.balanceOf(minter, tokenId), 0);
-  });
-
-  it("mint and transfer with whitelist control and minter signature", async () => {
-    const minter = accounts[1];
-    let transferTo = accounts[2];
-
-    const tokenId = minter + "b00000000000000000000001";
-    const tokenURI = "//uri";
-    let supply = 5;
-    let mint = 2;
-
-    const signature = await getSignature(tokenId, tokenURI, supply, creators([minter]), [], minter);
-
-    await expectThrow(
-      token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [signature]], transferTo, mint, {from: whiteListProxy})
-    );
-
-    await token.setApprovalForAll(whiteListProxy, true, {from: minter})
-    await token.addWhitelist(minter, {from: tokenOwner});
-    assert.equal(await token.isWhitelist(minter), true);
-    assert.equal(await token.isWhitelist(whiteListProxy), false);
-
-    await token.mintAndTransfer([tokenId, tokenURI, supply, creators([minter]), [], [signature]], transferTo, mint, {from: whiteListProxy})
     assert.equal(await token.balanceOf(transferTo, tokenId), mint);
     assert.equal(await token.balanceOf(minter, tokenId), 0);
   });
@@ -259,7 +143,7 @@ contract("ERC1155MadNftUser", accounts => {
     );
 
     await token.setApprovalForAll(whiteListProxy, true, {from: minter})
-    await token.addWhitelist(minter, {from: tokenOwner});
+    await token.addWhitelist([minter], {from: tokenOwner});
     assert.equal(await token.isWhitelist(minter), true);
     assert.equal(await token.isWhitelist(whiteListProxy), false);
 
