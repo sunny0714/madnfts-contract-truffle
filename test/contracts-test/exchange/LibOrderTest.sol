@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.4;
 
-import "../../exchange/LibOrder.sol";
+import "../../../contracts/exchange/LibOrder.sol";
 
 contract LibOrderTest {
     function calculateRemaining(LibOrder.Order calldata order, uint fill, bool isMakeFill) external pure returns (uint makeAmount, uint takeAmount) {

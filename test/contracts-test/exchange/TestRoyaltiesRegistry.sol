@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.4;
 
-import "../../royalties/IRoyaltiesProvider.sol";
-import "../../royalties/LibRoyalties.sol";
-import "../../royalties/Royalties.sol";
+import "../../../contracts/royalties/IRoyaltiesProvider.sol";
+import "../../../contracts/royalties/LibRoyalties.sol";
+import "../../../contracts/royalties/Royalties.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 
 contract TestRoyaltiesRegistry is IRoyaltiesProvider {

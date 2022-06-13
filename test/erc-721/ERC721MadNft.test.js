@@ -102,6 +102,64 @@ contract("ERC721MadNft", accounts => {
 
   });
 
+  it("mint and transfer by minter, and token created by ERC721Factory ", async () => {
+    token = await ERC721MadNft.new();
+    beacon = await UpgradeableBeacon.new(token.address);
+    factory = await ERC721Factory.new(beacon.address, transferProxy.address, proxyLazy.address);
+    const resultCreateToken = await factory.methods['createToken(string,string,string,string,uint256)'](name, "MAD", "https://ipfs.madnfts.com", "https://ipfs.madnfts.com", 1, {from: tokenOwner});
+    truffleAssert.eventEmitted(resultCreateToken, 'Create721MadNftProxy', (ev) => {
+       proxy = ev.proxy;
+      return true;
+    });
+    tokenByProxy = await ERC721MadNft.at(proxy);
+
+    const minter = tokenOwner;
+    const tokenId = minter + "b00000000000000000000001";
+    const tokenURI = "//uri";
+
+    const tx = await tokenByProxy.mintAndTransfer([tokenId, tokenURI, creators([minter]), [], [zeroWord]], minter, {from: minter});
+    const Transfer = await tokenByProxy.getPastEvents("Transfer", {
+      fromBlock: tx.receipt.blockNumber,
+      toBlock: tx.receipt.blockNumber
+    });
+    assert.equal(Transfer.length, 1, "Transfer.length")
+
+    assert.equal(await tokenByProxy.ownerOf(tokenId), minter);
+  });
+
+  it("checkPrefix should work correctly, checks for duplicating of the base part of the uri ", async () => {
+    token = await ERC721MadNft.new();
+    beacon = await UpgradeableBeacon.new(token.address);
+    factory = await ERC721Factory.new(beacon.address, transferProxy.address, proxyLazy.address);
+    const baseURI = "https://ipfs.madnfts.com"
+    const resultCreateToken = await factory.methods['createToken(string,string,string,string,uint256)'](name, "MAD", baseURI, "https://ipfs.madnfts.com", 1, {from: tokenOwner});
+    truffleAssert.eventEmitted(resultCreateToken, 'Create721MadNftProxy', (ev) => {
+       proxy = ev.proxy;
+      return true;
+    });
+    tokenByProxy = await ERC721MadNft.at(proxy);
+
+    const minter = tokenOwner;
+    const tokenId = minter + "b00000000000000000000001";
+    const tokenURI = baseURI + "/12345/456";
+
+    await tokenByProxy.mintAndTransfer([tokenId, tokenURI, creators([minter]), [], [zeroWord]], minter, {from: minter});
+    const gettokeURI = await tokenByProxy.tokenURI(tokenId);
+    assert.equal(gettokeURI, tokenURI, "token uri same with base")
+
+    const tokenId1 = minter + "b00000000000000000000002"
+    const tokenURI1 = "/12345/123512512/12312312";
+    await tokenByProxy.mintAndTransfer([tokenId1, tokenURI1, creators([minter]), [], [zeroWord]], minter, {from: minter});
+    const gettokeURI1 = await tokenByProxy.tokenURI(tokenId1);
+    assert.equal(gettokeURI1, baseURI + tokenURI1, "different uri")
+
+    const tokenId2 = minter + "b00000000000000000000003"
+    const tokenURI2 = "/12345/";
+    await tokenByProxy.mintAndTransfer([tokenId2, tokenURI2, creators([minter]), [], [zeroWord]], minter, {from: minter});
+    const gettokeURI2 = await tokenByProxy.tokenURI(tokenId2);
+    assert.equal(gettokeURI2, baseURI + tokenURI2, "different uri")
+  });
+
   it("check for ERC165 interface", async () => {
   	assert.equal(await token.supportsInterface("0x01ffc9a7"), true);
   });
@@ -144,6 +202,56 @@ contract("ERC721MadNft", accounts => {
     assert.equal(newBaseUri, newBaseUriFromEvent);
   });
 
+  it("mint and transfer by whitelist proxy", async () => {
+    const minter = accounts[1];
+    let transferTo = accounts[2];
+
+    const tokenId = minter + "b00000000000000000000001";
+    const tokenURI = "//uri";
+    let fees = [];
+
+    const signature = await getSignature(tokenId, tokenURI, creators([minter]), fees, minter);
+
+    const tx = await token.mintAndTransfer([tokenId, tokenURI, creators([minter]), fees, [signature]], transferTo, {from: whiteListProxy});
+    const Transfer = await token.getPastEvents("Transfer", {
+      fromBlock: tx.receipt.blockNumber,
+      toBlock: tx.receipt.blockNumber
+    });
+    assert.equal(Transfer.length, 2, "Transfer.length")
+    const transferEvent0 = Transfer[0]
+    const transferEvent1 = Transfer[1]
+
+    assert.equal(transferEvent0.args.from, "0x0000000000000000000000000000000000000000", "transfer 0 from")
+    assert.equal(transferEvent0.args.to, minter, "transfer 0 to")
+    assert.equal("0x" + transferEvent0.args.tokenId.toString(16), tokenId.toLowerCase(), "transfer 0 tokenId")
+
+    assert.equal(transferEvent1.args.from, minter, "transfer 1 from")
+    assert.equal(transferEvent1.args.to, transferTo, "transfer 1 to")
+    assert.equal("0x" + transferEvent1.args.tokenId.toString(16), tokenId.toLowerCase(), "transfer 1 tokenId")
+
+    assert.equal(await token.ownerOf(tokenId), transferTo);
+    await checkCreators(tokenId, [minter]);
+    // assert.equal(await token.getCreators(tokenId), [minter]);
+  });
+
+  it("mint and transfer by whitelist proxy. several creators", async () => {
+    const minter = accounts[1];
+    const creator2 = accounts[3];
+    let transferTo = accounts[2];
+
+    const tokenId = minter + "b00000000000000000000001";
+    const tokenURI = "//uri";
+    let fees = [];
+
+    const signature1 = await getSignature(tokenId, tokenURI, creators([minter, creator2]), fees, minter);
+    const signature2 = await getSignature(tokenId, tokenURI, creators([minter, creator2]), fees, creator2);
+
+    await token.mintAndTransfer([tokenId, tokenURI, creators([minter, creator2]), fees, [signature1, signature2]], transferTo, {from: whiteListProxy});
+
+    assert.equal(await token.ownerOf(tokenId), transferTo);
+    await checkCreators(tokenId, [minter, creator2]);
+  });
+
   it("mint and transfer by whitelist proxy. several creators. minter is not first", async () => {
     const minter = accounts[1];
     const creator2 = accounts[3];
@@ -176,6 +284,23 @@ contract("ERC721MadNft", accounts => {
     await expectThrow(
       token.mintAndTransfer([tokenId, tokenURI, creators([minter, creator2]), fees, [signature2, signature1]], transferTo, {from: whiteListProxy})
     );
+  });
+
+  it("mint and transfer by approved proxy for all", async () => {
+    const minter = accounts[1];
+    let transferTo = accounts[2];
+
+    const tokenId = minter + "b00000000000000000000001";
+    const tokenURI = "//uri";
+
+    const signature = await getSignature(tokenId, tokenURI, creators([minter]), [], minter);
+
+    let proxy = accounts[5];
+    await token.setApprovalForAll(proxy, true, {from: minter});
+    const ttxx = await token.mintAndTransfer([tokenId, tokenURI, creators([minter]), [], [signature]], transferTo, {from: proxy});
+    console.log(ttxx.receipt.gasUsed)
+
+    assert.equal(await token.ownerOf(tokenId), transferTo);
   });
 
   it("mint and transfer by approved proxy for tokenId", async () => {

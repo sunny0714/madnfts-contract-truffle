@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.4;
 
-import "../../exchange/MadNftTransferManager.sol";
-import "../../exchange/ITransferExecutor.sol";
-import "../../exchange/OrderValidator.sol";
-import "../../royalties/IRoyaltiesProvider.sol";
+import "../../../contracts/exchange/MadNftTransferManager.sol";
+import "../../../contracts/exchange/ITransferExecutor.sol";
+import "../../../contracts/exchange/OrderValidator.sol";
+import "../../../contracts/royalties/IRoyaltiesProvider.sol";
 
 contract MadNftTransferManagerTest is MadNftTransferManager, TransferExecutor, OrderValidator {
 

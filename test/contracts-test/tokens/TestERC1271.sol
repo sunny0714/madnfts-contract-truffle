@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.4;
 
-import "../../lazy-mint/erc-1271/ERC1271.sol";
+import "../../../contracts/lazy-mint/erc-1271/ERC1271.sol";
 
 contract TestERC1271 is ERC1271 {
 

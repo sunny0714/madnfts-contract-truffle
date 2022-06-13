@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.4;
 
-import "../../exchange-interfaces/IERC20TransferProxy.sol";
+import "../../../contracts/exchange-interfaces/IERC20TransferProxy.sol";
 
 contract ERC20TransferProxyTest is IERC20TransferProxy {
 

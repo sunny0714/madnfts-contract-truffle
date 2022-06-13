@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.4;
 
-import "../../erc-721/ERC721Upgradeable.sol";
+import "../../../contracts/erc-721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "../../royalties/Royalties.sol";
-import "../../royalties/LibRoyalties.sol";
+import "../../../contracts/royalties/Royalties.sol";
+import "../../../contracts/royalties/LibRoyalties.sol";
 
 contract TestERC721WithRoyalties is Initializable, Royalties, ERC721Upgradeable {
     function initialize() public initializer {

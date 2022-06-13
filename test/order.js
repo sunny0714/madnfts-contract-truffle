@@ -38,7 +38,7 @@ async function sign(order, account, verifyingContract) {
 	const chainId = Number(await web3.eth.getChainId());
 	const data = EIP712.createTypeData({
 		name: "Exchange",
-		version: "2",
+		version: "1",
 		chainId,
 		verifyingContract
 	}, 'Order', order, Types);
